@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aprende Español - Lecturas e Interacción</title>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --accent: #3498db;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 850px;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h1, h2, h3 { color: var(--primary); text-align: center; }
+
+    .btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin: 5px;
+    }
+    .btn:hover { background-color: #2980b9; }
+    .btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+    .btn-success { background-color: var(--success); }
+    .btn-success:hover { background-color: #27ae60; }
+
+    .hidden { display: none !important; }
+
+    /* Menú */
+    .grid-menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .menu-card {
+      background: #edf2f7;
+      padding: 18px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .menu-card:hover { border-color: var(--accent); background: #e2e8f0; }
+
+    /* Controles */
+    .controls-panel {
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .text-display {
+      font-size: 18px;
+      line-height: 1.6;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      max-height: 350px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    /* Match */
+    .match-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .column { width: 48%; display: flex; flex-direction: column; gap: 10px; }
+    .match-item {
+      padding: 10px 14px;
+      background: #edf2f7;
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      font-size: 15px;
+    }
+    .match-item.selected { border-color: var(--accent); background: #ebf8ff; }
+    .match-item.matched { border-color: var(--success); background: #f0fff4; opacity: 0.5; cursor: default; }
+
+    /* Deletreo */
+    .spelling-box { text-align: center; margin: 20px 0; }
+    .spelling-box input {
+      font-size: 20px;
+      padding: 8px;
+      text-align: center;
+      width: 250px;
+      letter-spacing: 2px;
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+    }
+
+    /* Traducción */
+    .trans-option {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin: 10px 0;
+      padding: 14px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .trans-option:hover { background: #f1f5f9; }
+    .trans-option.correct-choice {
+      background-color: #d1fae5;
+      border-color: var(--success);
+      color: #065f46;
+      font-weight: bold;
+    }
+    .progress-tracker { text-align: center; font-weight: bold; color: var(--primary); margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- PANTALLA 1: MENÚ -->
+  <div id="view-menu">
+    <h1>Juego de Español - Lecturas</h1>
+    <p style="text-align:center;">Selecciona una lectura para comenzar:</p>
+    <div id="menu-grid" class="grid-menu"></div>
+  </div>
+
+  <!-- PANTALLA 2: LECTURA Y TTS -->
+  <div id="view-reading" class="hidden">
+    <button class="btn" onclick="showMenu()">← Menú Principal</button>
+    <h2 id="read-title"></h2>
+    
+    <div class="controls-panel">
+      <div>
+        <button class="btn" onclick="playTTS()">▶ Leer</button>
+        <button class="btn" onclick="pauseTTS()">⏸ Pausar</button>
+        <button class="btn" onclick="stopTTS()">⏹ Detener</button>
+      </div>
+      <div>
+        <label for="rate">Velocidad: <span id="rate-val">0.9</span>x</label>
+        <input type="range" id="rate" min="0.5" max="1.3" step="0.1" value="0.9" oninput="document.getElementById('rate-val').innerText = this.value">
+      </div>
+    </div>
+
+    <div id="read-text" class="text-display"></div>
+    <button class="btn btn-success" style="width: 100%;" onclick="startMatchGame()">Comenzar Ejercicios →</button>
+  </div>
+
+  <!-- PANTALLA 3: FASE 1 - MATCH -->
+  <div id="view-match" class="hidden">
+    <h2>Fase 1: Empareja el Vocabulario</h2>
+    <p style="text-align:center;">Selecciona una palabra en español y su significado en inglés.</p>
+    <div class="match-container">
+      <div id="col-words" class="column"></div>
+      <div id="col-defs" class="column"></div>
+    </div>
+    <button id="btn-next-spelling" class="btn btn-success hidden" style="width: 100%; margin-top: 20px;" onclick="startSpellingGame()">Ir al Deletreo →</button>
+  </div>
+
+  <!-- PANTALLA 4: FASE 2 - DELETREO -->
+  <div id="view-spelling" class="hidden">
+    <h2>Fase 2: Deletreo de Vocabulario</h2>
+    <div id="spelling-progress" class="progress-tracker"></div>
+    
+    <div class="controls-panel" style="justify-content: center; width: 80%; margin: 0 auto 15px auto;">
+      <label for="spelling-rate">Velocidad de audio: <span id="spelling-rate-val">0.8</span>x</label>
+      <input type="range" id="spelling-rate" min="0.4" max="1.2" step="0.1" value="0.8" oninput="document.getElementById('spelling-rate-val').innerText = this.value">
+    </div>
+
+    <div class="spelling-box">
+      <button class="btn" onclick="playSpellingAudio()">🔊 Escuchar Palabra</button><br><br>
+      <input type="text" id="spelling-input" autocomplete="off" placeholder="Escribe aquí..." onkeyup="if(event.key==='Enter') checkSpelling()">
+      <br><br>
+      <button class="btn" onclick="checkSpelling()">Verificar</button>
+      <p id="spelling-feedback" style="font-weight:bold; min-height:24px;"></p>
+    </div>
+    <button id="btn-next-trans" class="btn btn-success hidden" style="width: 100%; margin-top: 20px;" onclick="startTransGame()">Ir a Traducción →</button>
+  </div>
+
+  <!-- PANTALLA 5: FASE 3 - TRADUCCIÓN -->
+  <div id="view-translation" class="hidden">
+    <h2>Fase 3: Traducción de Frases</h2>
+    <div id="trans-progress" class="progress-tracker"></div>
+    <p id="trans-prompt" style="font-size: 18px; text-align:center; font-weight:bold; color: #2c3e50;"></p>
+    <div id="trans-options"></div>
+    <p id="trans-feedback" style="text-align:center; font-weight:bold; font-size: 18px; min-height:25px;"></p>
+    <button id="btn-finish" class="btn btn-success hidden" style="width: 100%; margin-top: 20px;" onclick="showMenu()">¡Completado! Volver al Menú</button>
+  </div>
+</div>
+
+<script>
+// EFECTOS DE SONIDO (WEB AUDIO API)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  if (type === 'success') {
+    // Sonido armónico suave (Arpegio C Mayor: C5, E5, G5)
+    const notes = [523.25, 659.25, 783.99]; 
+    notes.forEach((freq, index) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (index * 0.08));
+      
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime + (index * 0.08));
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (index * 0.08) + 0.25);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start(audioCtx.currentTime + (index * 0.08));
+      osc.stop(audioCtx.currentTime + (index * 0.08) + 0.25);
+    });
+  } else if (type === 'error') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+    osc.frequency.exponentialRampToValueAtTime(146.83, audioCtx.currentTime + 0.2); // D3
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.25);
+  }
+}
+
+// REMOVER TILDES Y ACENTOS
+function removeAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// BASE DE DATOS DE LECTURAS
+const lecturas = [
+  {
+    id: 1,
+    title: "1. La Cocina Gris",
+    text: "Hoy es martes 7 de julio de 2026 y 9:42 de la mañana. Hace mucho sol y la temperatura de la casa es agradable. Esta es una cocina grande con paredes de color gris. A la izquierda hay un refrigerador negro y grande. El refrigerador está cerrado y tiene muchas fotos. En el centro de la cocina hay una isla con una mesa clara de mármol. Hay 3 sillas altas de color marrón en frente de la isla. La isla tiene un lavabo y una llave de metal y una botella de jabón a la derecha. Arriba hay muchos gabinetes de color blanco para guardar platos. Normalmente, la cocina está un poco desordenada con vasos y botellas. La cocina tiene 2 lámparas blancas que cuelgan del techo.",
+    vocab: [
+      { es: "Refrigerador", en: "Refrigerator" },
+      { es: "Mármol", en: "Marble" },
+      { es: "Sillas altas", en: "Tall chairs" },
+      { es: "Lavabo", en: "Sink" },
+      { es: "Llave de metal", en: "Metal faucet" },
+      { es: "Gabinetes", en: "Cabinets" },
+      { es: "Desordenada", en: "Messy" },
+      { es: "Lámparas", en: "Lamps" },
+      { es: "Techo", en: "Ceiling" }
+    ],
+    trans: [
+      { prompt: "Today is Tuesday, July 7, 2026, and it is 9:42 in the morning.", options: ["Hoy es martes 7 de julio de 2026 y 9:42 de la mañana.", "Hoy es lunes 7 de julio y son las 9:00.", "Hoy es martes 14 de julio a las 9:42."], correct: 0 },
+      { prompt: "It is very sunny and the temperature in the house is pleasant.", options: ["La cocina está un poco desordenada.", "Hace mucho sol y la temperatura de la casa es agradable.", "Hace mucho frío y la casa está oscura."], correct: 1 },
+      { prompt: "This is a large kitchen with gray walls.", options: ["Esta es una cocina pequeña con paredes blancas.", "Esta es una cocina grande con paredes de color gris.", "La cocina tiene una mesa clara de mármol."], correct: 1 },
+      { prompt: "On the left, there is a large black refrigerator.", options: ["A la derecha hay un refrigerador blanco.", "A la izquierda hay un refrigerador negro y grande.", "En el centro hay un refrigerador cerrado."], correct: 1 },
+      { prompt: "The refrigerator is closed and has many photos on it.", options: ["El refrigerador está abierto y tiene botellas.", "El refrigerador está cerrado y tiene muchas fotos.", "El refrigerador es viejo y grande."], correct: 1 },
+      { prompt: "In the center of the kitchen, there is an island with a light marble countertop.", options: ["En el centro de la cocina hay una isla con una mesa clara de mármol.", "En el centro hay 3 sillas de color marrón.", "Arriba hay muchos gabinetes blancos."], correct: 0 },
+      { prompt: "There are three tall brown chairs in front of the island.", options: ["Hay 2 sillas blancas en la cocina.", "Hay 3 sillas altas de color marrón en frente de la isla.", "Hay sillas negras detrás de la mesa."], correct: 1 },
+      { prompt: "The island has a sink, a metal faucet, and a bottle of soap on the right.", options: ["La isla tiene un lavabo y una llave de metal y una botella de jabón a la derecha.", "La mesa tiene vasos y botellas de agua.", "Arriba hay platos y vasos de vidrio."], correct: 0 },
+      { prompt: "Normally, the kitchen is a little messy with glasses and bottles.", options: ["La cocina siempre está limpia y ordenada.", "Normally, la cocina está un poco desordenada con vasos y botellas.", "Normalmente hay comida sobre la mesa."], correct: 1 },
+      { prompt: "The kitchen has two white lamps hanging from the ceiling.", options: ["La cocina tiene 2 lámparas blancas que cuelgan del techo.", "La cocina tiene luces brillantes en la pared.", "Hay una lámpara en la mesa."], correct: 0 }
+    ]
+  },
+  {
+    id: 2,
+    title: "2. La Reunión Familiar",
+    text: "Hoy es martes 14 de julio de 2026. Son las 9:06 de la mañana. El clima es templado. La temperatura es de 70 grados. El día es caluroso pero la sala tiene aire acondicionado fresco. Ayer la gran familia celebró una fiesta muy alegre. Ellos comieron pastel antes de posar frente a la cámara. En la foto está mi familia. Nosotros estamos de pie sobre el piso. Al fondo vemos una pared limpia y una pantalla grande. A la izquierda hay una puerta oscura junto a mi hijo pequeño. Mi hijo Anthony tiene cabello rubio, ojos azules y usa un traje gris. Él tiene un juguete de plástico barato en sus manos. Detrás de mi hijo está su abuelo alto con camisa blanca. El abuelo tiene los brazos fuertes y un cabello corto y canoso. Junto a él yo veo a mi sobrino con pantalones. Mi sobrino normalmente usa lentes porque no ve bien de lejos. Él es muy inteligente y también es un chico simpático. En el centro está mi sobrina con un vestido negro. Ella sostiene con sus brazos a su hermano muy pequeño. A veces el bebé duerme mucho. Antes de la foto nosotros cenamos juntos. Al lado estoy yo con un vestido de color rojo. Yo soy muy divertida y siempre ayudo a toda mi familia. A su derecha vemos a mi sobrino con chaleco negro. Él usualmente tiene el cabello largo y rizado sobre su frente. Finalmente, a la derecha está mi prima que es muy trabajadora. Ella usa un vestido negro y además tiene una sonrisa alegre. Ella tiene un teléfono celular moderno en su mano derecha. Nosotros nos queremos mucho y por eso sonreímos hoy. Nosotros nos alegramos cuando estamos juntos en la reunión.",
+    vocab: [
+      { es: "Traje", en: "Suit" },
+      { es: "Juguete", en: "Toy" },
+      { es: "Abuelo", en: "Grandfather" },
+      { es: "Canoso", en: "Gray-haired" },
+      { es: "Sobrino", en: "Nephew" },
+      { es: "Lentes", en: "Glasses" },
+      { es: "Sobrina", en: "Niece" },
+      { es: "Chaleco", en: "Vest" },
+      { es: "Prima", en: "Cousin (female)" },
+      { es: "Sonrisa", en: "Smile" }
+    ],
+    trans: [
+      { prompt: "The day is warm, but the living room has cool air conditioning.", options: ["El día es caluroso pero la sala tiene aire acondicionado fresco.", "El clima es frío y la temperatura es de 70 grados.", "Ayer la familia celebró en la sala."], correct: 0 },
+      { prompt: "Yesterday, the large family celebrated a very happy party.", options: ["Ayer la gran familia celebró una fiesta muy alegre.", "Nosotros cenamos juntos antes de la fiesta.", "Ellos comieron pastel frente a la cámara."], correct: 0 },
+      { prompt: "They ate cake before posing in front of the camera.", options: ["Ellos comieron pastel antes de posar frente a la cámara.", "Nosotros sonreímos frente a la pantalla grande.", "Ellos celebraron con limonada y pastel."], correct: 0 },
+      { prompt: "My son Anthony has blond hair, blue eyes, and is wearing a gray suit.", options: ["Mi hijo Anthony tiene cabello oscuro y ojos verdes.", "Mi hijo Anthony tiene cabello rubio, ojos azules y usa un traje gris.", "Mi sobrino usa traje gris y lentes."], correct: 1 },
+      { prompt: "Behind my son is his tall grandfather wearing a white shirt.", options: ["Detrás de mi hijo está su abuelo alto con camisa blanca.", "Junto a él está su tío alto con chaleco.", "Al fondo vemos a su abuelo con camisa roja."], correct: 0 },
+      { prompt: "My nephew normally wears glasses because he cannot see well at a distance.", options: ["Mi sobrino normalmente usa lentes porque no ve bien de lejos.", "Mi sobrino tiene el cabello largo y rizado.", "Mi sobrino es muy inteligente y usa chaleco."], correct: 0 },
+      { prompt: "In the center is my niece wearing a black dress.", options: ["A la derecha está mi prima con vestido negro.", "En el centro está mi sobrina con un vestido negro.", "Al lado estoy yo con un vestido de color rojo."], correct: 1 },
+      { prompt: "Next to her am I wearing a red dress.", options: ["Al lado estoy yo con un vestido de color rojo.", "Ella usa un vestido negro y tiene una sonrisa.", "Mi prima usa un vestido rojo moderno."], correct: 0 },
+      { prompt: "Finally, on the right is my cousin, who is very hardworking.", options: ["Finalmente, a la derecha está mi prima que es muy trabajadora.", "A su derecha vemos a mi sobrino trabajador.", "Ella es divertida y siempre ayuda a la familia."], correct: 0 },
+      { prompt: "We love each other very much, and that is why we are smiling today.", options: ["Nosotros nos queremos mucho y por eso sonreímos hoy.", "Nosotros nos alegramos cuando comemos juntos.", "Todos sonreímos en la foto familiar."], correct: 0 }
+    ]
+  },
+  {
+    id: 3,
+    title: "3. El Quirófano",
+    text: "Hoy es jueves 30 de julio de 2026. Son las 9:00 de la mañana. Hace frío y hay 18°C grados. El quirófano está muy ocupado hoy. Hay una mesa azul a la izquierda. Yo soy la mujer de la izquierda. Yo llevo ropa de quirófano. Tengo una mascarilla en mi cara. Yo ayudo al doctor con la mujer que da a luz. Hay instrumentos médicos sobre la mesa azul. La mesa grande tiene ropa azul limpia y estéril. El médico es mi jefe directo. Él tiene una mascarilla grande. La luz brillante está arriba de los médicos. Normally la luz brillante es muy alta. La mesa tiene muchas pinzas quirúrgicas y otros instrumentos.",
+    vocab: [
+      { es: "Quirófano", en: "Operating room" },
+      { es: "Mascarilla", en: "Mask" },
+      { es: "Dar a luz", en: "To give birth" },
+      { es: "Instrumentos", en: "Instruments" },
+      { es: "Estéril", en: "Sterile" },
+      { es: "Jefe", en: "Boss / Supervisor" },
+      { es: "Luz brillante", en: "Bright light" },
+      { es: "Pinzas", en: "Surgical clamps" }
+    ],
+    trans: [
+      { prompt: "It is cold and the temperature is 18°C.", options: ["Hace frío y hay 18°C grados.", "Hace calor y la temperatura es 20°C.", "El clima es templado y hay 18 grados."], correct: 0 },
+      { prompt: "The operating room is very busy today.", options: ["El quirófano está muy ocupado hoy.", "El quirófano está libre y limpio.", "La oficina médica está muy ocupada."], correct: 0 },
+      { prompt: "I am wearing surgical clothing.", options: ["Yo llevo ropa de quirófano.", "Yo tengo ropa azul limpia.", "El médico lleva ropa de quirófano."], correct: 0 },
+      { prompt: "I have a mask on my face.", options: ["Tengo una mascarilla en mi cara.", "Él tiene una mascarilla verde.", "Yo llevo guantes en mis manos."], correct: 0 },
+      { prompt: "I am helping the doctor with the woman who is giving birth.", options: ["Yo ayudo al doctor con la mujer que da a luz.", "El doctor ayuda a la paciente en la mesa.", "Yo trabajo con el médico en la sala."], correct: 0 },
+      { prompt: "There are medical instruments on the blue table.", options: ["Hay instrumentos médicos sobre la mesa azul.", "Hay muchas pinzas en el estante.", "Hay ropa limpia sobre la mesa grande."], correct: 0 },
+      { prompt: "The large table has clean, sterile blue sheets on it.", options: ["La mesa grande tiene ropa azul limpia y estéril.", "La mesa azul tiene instrumentos quirúrgicos.", "La ropa de quirófano está sobre la silla."], correct: 0 },
+      { prompt: "The doctor is my direct supervisor.", options: ["El médico es mi jefe directo.", "El doctor es muy alto e inteligente.", "Mi jefe es el médico de la izquierda."], correct: 0 },
+      { prompt: "The bright light is above the doctors.", options: ["La luz brillante está arriba de los médicos.", "La luz del techo es grande y brillante.", "Normally las luces están encendidas."], correct: 0 },
+      { prompt: "The table has many surgical clamps and other instruments.", options: ["La mesa tiene muchas pinzas quirúrgicas y otros instrumentos.", "Hay instrumentos médicos sobre el estante azul.", "El doctor usa pinzas y mascarilla."], correct: 0 }
+    ]
+  },
+  {
+    id: 4,
+    title: "4. La Oficina Médica",
+    text: "Hoy es martes 4 de agosto de 2026. Son las 8:00 de la noche. El clima es templado y la temperatura es de 70 grados. La oficina está muy limpia. En el centro hay un escritorio grande de madera. Un tomacorriente blanco está en la pared, a la izquierda de la mesa. Detrás del escritorio hay una silla negra muy cómoda. Esta es mi nueva oficina y voy a trabajar aquí porque soy una doctora muy trabajadora e inteligente. En el techo hay dos luces brillantes. El piso es de madera. Hay una mesa que cuesta aproximadamente $500 dólares. Además, hay un estante alto a la derecha del escritorio. El estante está casi vacío pero tiene un bolso negro al fondo. Sobre el escritorio hay un monitor, un teclado y varios papeles. También veo una lata de soda y dos organizadores metálicos encima de la mesa. A la izquierda, hay una silla pequeña para las visitas.",
+    vocab: [
+      { es: "Escritorio", en: "Desk" },
+      { es: "Tomacorriente", en: "Electrical outlet" },
+      { es: "Silla cómoda", en: "Comfortable chair" },
+      { es: "Estante", en: "Shelf" },
+      { es: "Bolso", en: "Bag" },
+      { es: "Teclado", en: "Keyboard" },
+      { es: "Lata de soda", en: "Can of soda" },
+      { es: "Visitas", en: "Visitors" }
+    ],
+    trans: [
+      { prompt: "The office is very clean.", options: ["La oficina está muy limpia.", "El consultorio está muy limpio.", "La sala está limpia y ordenada."], correct: 0 },
+      { prompt: "In the center, there is a large wooden desk.", options: ["En el centro hay un escritorio grande de madera.", "Hay un escritorio pequeño a la derecha.", "A la izquierda hay una mesa de madera."], correct: 0 },
+      { prompt: "A white electrical outlet is on the wall, to the left of the desk.", options: ["Un tomacorriente blanco está en la pared, a la izquierda de la mesa.", "Hay dos tomacorrientes debajo del monitor.", "Un tomacorriente negro está en el piso."], correct: 0 },
+      { prompt: "Behind the desk, there is a very comfortable black chair.", options: ["Detrás del escritorio hay una silla negra muy cómoda.", "A la izquierda hay una silla pequeña para las visitas.", "Detrás de la mesa hay un estante alto."], correct: 0 },
+      { prompt: "On the ceiling, there are two bright lights.", options: ["En el techo hay dos luces brillantes.", "La luz brillante está arriba de la mesa.", "Hay una lámpara blanca en el techo."], correct: 0 },
+      { prompt: "There is a table that costs approximately $500 dollars.", options: ["Hay una mesa que cuesta aproximadamente $500 dólares.", "El escritorio cuesta $500 dólares.", "Hay un estante alto de $500 dólares."], correct: 0 },
+      { prompt: "In addition, there is a tall shelf to the right of the desk.", options: ["Además, hay un estante alto a la derecha del escritorio.", "Hay un estante pequeño al fondo de la oficina.", "A la derecha hay dos organizadores metálicos."], correct: 0 },
+      { prompt: "The shelf is almost empty but has a black bag in the back.", options: ["El estante está casi vacío pero tiene un bolso negro al fondo.", "El estante tiene muchos libros y papeles.", "Sobre el estante hay una lata de soda."], correct: 0 },
+      { prompt: "On the desk there is a monitor, a keyboard, and several papers.", options: ["Sobre el escritorio hay un monitor, un teclado y varios papeles.", "En la mesa veo una computadora y libros.", "Hay un teclado negro sobre el escritorio."], correct: 0 },
+      { prompt: "On the left, there is a small chair for visitors.", options: ["A la izquierda, hay una silla pequeña para las visitas.", "Hay dos sillas cómodas para los pacientes.", "A la derecha hay una silla negra alta."], correct: 0 }
+    ]
+  },
+  {
+    id: 5,
+    title: "5. El Consultorio Médico",
+    text: "Hoy es sábado 8 de agosto de 2026. Son las 9:08 de la mañana. El clima es fresco y la temperatura es de 68 grados. Hay un consultorio médico al fondo. En el centro hay un monitor de computadora con una pantalla encendida. Debajo del monitor está un taburete redondo. A la izquierda se observa una camilla médica con papel blanco sobre la colchoneta. A la derecha de la camilla hay una bandeja metálica. A la derecha de la habitación hay un lavabo de metal brillante. Arriba del lavabo hay 2 cajas de guantes de color azul. Además hay un contenedor rojo en la pared. Debajo de la computadora hay dos tomacorrientes en la pared. A la derecha hay una silla negra cómoda. Yo trabajo aquí con mis pacientes. Normally yo atiendo aquí a los pacientes cuando vienen. El servicio médico es costoso pero muy completo. El piso es de madera y el techo es blanco. Yo trabajo 10 horas en mi consultorio de martes a viernes.",
+    vocab: [
+      { es: "Pantalla encendida", en: "Screen turned on" },
+      { es: "Taburete", en: "Stool" },
+      { es: "Camilla", en: "Examination table" },
+      { es: "Colchoneta", en: "Cushion / Mat" },
+      { es: "Bandeja", en: "Tray" },
+      { es: "Guantes", en: "Gloves" },
+      { es: "Contenedor", en: "Container" },
+      { es: "Pacientes", en: "Patients" },
+      { es: "Costoso", en: "Expensive / Costly" }
+    ],
+    trans: [
+      { prompt: "In the center, there is a computer monitor with the screen turned on.", options: ["En el centro hay un monitor de computadora con una pantalla encendida.", "En el centro hay una computadora pequeña apagada.", "Sobre la mesa hay un monitor de computadora."], correct: 0 },
+      { prompt: "Under the monitor, there is a round stool.", options: ["Debajo del monitor está un taburete redondo.", "Debajo de la mesa hay una silla negra.", "Al lado del monitor hay un taburete."], correct: 0 },
+      { prompt: "On the left, there is a medical examination table with white paper covering the cushion.", options: ["A la izquierda se observa una camilla médica con papel blanco sobre la colchoneta.", "A la izquierda hay un lavabo metálico con guantes.", "Hay una camilla azul a la derecha del consultorio."], correct: 0 },
+      { prompt: "To the right of the examination table, there is a metal tray.", options: ["A la derecha de la camilla hay una bandeja metálica.", "A la derecha del lavabo hay una caja azul.", "Sobre la camilla hay una bandeja de metal."], correct: 0 },
+      { prompt: "On the right side of the room, there is a shiny metal sink.", options: ["A la derecha de la habitación hay un lavabo de metal brillante.", "A la izquierda hay un lavabo blanco de metal.", "Al fondo hay un lavabo brillante y grande."], correct: 0 },
+      { prompt: "Above the sink, there are two blue boxes of gloves.", options: ["Arriba del lavabo hay 2 cajas de guantes de color azul.", "Debajo del lavabo hay dos contenedores rojos.", "En la pared hay dos cajas de guantes."], correct: 0 },
+      { prompt: "Below the computer, there are two electrical outlets in the wall.", options: ["Debajo de la computadora hay dos tomacorrientes en la pared.", "A la izquierda hay un tomacorriente blanco.", "En la pared hay dos luces brillantes."], correct: 0 },
+      { prompt: "I work here with my patients.", options: ["Yo trabajo aquí con mis pacientes.", "Normally trabajo solo en mi oficina.", "Atiendo a mis pacientes de lunes a viernes."], correct: 0 },
+      { prompt: "Medical care is expensive but very comprehensive.", options: ["El servicio médico es costoso pero muy completo.", "El servicio médico es barato y rápido.", "Atender a los pacientes es muy difícil."], correct: 0 },
+      { prompt: "I work 10 hours in my office from Tuesday to Friday.", options: ["Yo trabajo 10 horas en mi consultorio de martes a viernes.", "Yo trabajo 8 horas diarias de lunes a viernes.", "Atiendo a los pacientes durante 10 horas los sábados."], correct: 0 }
+    ]
+  },
+  {
+    id: 6,
+    title: "6. Desayuno de Labor Day",
+    text: "Hoy es lunes 7 de septiembre de 2026. Son las 2:40 de la tarde. Hoy es Labor Day. El clima es fresco y la temperatura es de 72 grados. En la foto está mi hijo. Él está sentado junto a la mesa pequeña. Él tiene el cabello rubio y corto. Además, sus ojos son claros. Su nariz es pequeña. Él es divertido e inteligente. Él usa una camiseta gris. También tiene una chaqueta roja de Spider-Man. Detrás de él hay una silla. Sobre la mesa hay varias frutas frescas. Hay 2 plátanos amarillos. También hay una naranja. Además, hay pocos arándanos y algunos trozos de melón. En el plato principal hay dos panqueques dulces. A la izquierda hay un vaso de jugo de naranja. También hay un vaso de limonada fría. El vaso está limpio. Al fondo hay 4 personas caminando. Normally él desayuna temprano. Ayer él comió frutas en su casa. Él bebe jugo porque tiene sed. Entonces él sonríe a la cámara.",
+    vocab: [
+      { es: "Chaqueta", en: "Jacket" },
+      { es: "Frutas frescas", en: "Fresh fruits" },
+      { es: "Plátanos", en: "Bananas" },
+      { es: "Arándanos", en: "Blueberries" },
+      { es: "Trozos de melón", en: "Pieces of melon" },
+      { es: "Panqueques", en: "Pancakes" },
+      { es: "Limonada", en: "Lemonade" },
+      { es: "Sed", en: "Thirst" }
+    ],
+    trans: [
+      { prompt: "He is sitting next to a small table.", options: ["Él está sentado junto a la mesa pequeña.", "Él está de pie al lado de la silla.", "Él come frutas en la mesa grande."], correct: 0 },
+      { prompt: "He is wearing a gray T-shirt.", options: ["Él usa una camiseta gris.", "Él usa un traje gris y azul.", "Él tiene una camiseta roja."], correct: 0 },
+      { prompt: "He also has a red Spider-Man jacket.", options: ["También tiene una chaqueta roja de Spider-Man.", "Él tiene un dibujo de Spider-Man.", "Su hijo usa una chaqueta azul."], correct: 0 },
+      { prompt: "On the table there are several fresh fruits.", options: ["Sobre la mesa hay varias frutas frescas.", "En el plato hay frutas y panqueques.", "Hay botellas de jugo sobre la mesa."], correct: 0 },
+      { prompt: "There are two yellow bananas.", options: ["Hay 2 plátanos amarillos.", "Hay dos manzanas rojas.", "Veo trozos de plátano amarillo."], correct: 0 },
+      { prompt: "In addition, there are a few blueberries and some pieces of melon.", options: ["Además, hay pocos arándanos y algunos trozos de melón.", "Hay arándanos frescos en el vaso.", "En la mesa hay melón y naranjas."], correct: 0 },
+      { prompt: "On the main plate, there are two sweet pancakes.", options: ["En el plato principal hay dos panqueques dulces.", "Él comió dos panqueques salados.", "En el plato hay frutas y panqueques."], correct: 0 },
+      { prompt: "On the left, there is a glass of orange juice.", options: ["A la izquierda hay un vaso de jugo de naranja.", "Hay un vaso de limonada fría a la derecha.", "Él bebe un vaso de jugo de naranja."], correct: 0 },
+      { prompt: "He drinks juice because he is thirsty.", options: ["Él bebe jugo porque tiene sed.", "Él comió frutas porque tiene hambre.", "Normally bebe limonada en el desayuno."], correct: 0 },
+      { prompt: "Therefore, he smiles at the camera.", options: ["Entonces él sonríe a la cámara.", "Por eso posamos frente a la cámara.", "Él sonríe porque está feliz."], correct: 0 }
+    ]
+  },
+  {
+    id: 7,
+    title: "7. La Clase de los Niños",
+    text: "Es el 14 de septiembre de 2026. Son las 10:51 de la mañana. Hace buen tiempo y hay 20 grados. En la clase hay 4 niños sentados. Un niño con camiseta azul está a la izquierda. Antonio tiene unas tijeras en la mano. Una niña con camiseta de rayas está a la derecha. La niña tiene un papel largo en la mesa. Antonio tiene camiseta amarilla. Él está arriba. Hay un estante amarillo con libros al fondo. Hay un contenedor con lápices, borradores, tijeras y marcadores en la mesa. La mesa grande está limpia y clara. Normally los niños cortan papel en la clase. El libro amarillo está a la derecha del estante. Antonio estudia por 9 horas y él está feliz en la escuela.",
+    vocab: [
+      { es: "Tijeras", en: "Scissors" },
+      { es: "Camiseta de rayas", en: "Striped shirt" },
+      { es: "Estante", en: "Bookshelf" },
+      { es: "Contenedor", en: "Container" },
+      { es: "Lápices", en: "Pencils" },
+      { es: "Borradores", en: "Erasers" },
+      { es: "Marcadores", en: "Markers" },
+      { es: "Cortan papel", en: "Cut paper" }
+    ],
+    trans: [
+      { prompt: "In the classroom, there are four children sitting down.", options: ["En la clase hay 4 niños sentados.", "Hay 4 niños caminando al fondo.", "En la escuela hay cuatro niños estudiando."], correct: 0 },
+      { prompt: "A boy wearing a blue shirt is on the left.", options: ["Un niño con camiseta azul está a la izquierda.", "Antonio tiene una camiseta azul y tijeras.", "Un niño con camiseta amarilla está a la derecha."], correct: 0 },
+      { prompt: "Antonio has a pair of scissors in his hand.", options: ["Antonio tiene unas tijeras en la mano.", "La niña tiene tijeras y borradores.", "Antonio corta papel con tijeras."], correct: 0 },
+      { prompt: "A girl wearing a striped shirt is on the right.", options: ["Una niña con camiseta de rayas está a la derecha.", "La niña usa un vestido negro de rayas.", "Una niña a la izquierda tiene un papel."], correct: 0 },
+      { prompt: "The girl has a long sheet of paper on the table.", options: ["La niña tiene un papel largo en la mesa.", "En la mesa hay varios papeles y libros.", "La niña corta un papel corto."], correct: 0 },
+      { prompt: "There is a yellow bookshelf with books in the background.", options: ["Hay un estante amarillo con libros al fondo.", "Hay un contenedor de libros en el estante.", "El estante amarillo está a la derecha."], correct: 0 },
+      { prompt: "There is a container with pencils, erasers, scissors, and markers on the table.", options: ["Hay un contenedor con lápices, borradores, tijeras y marcadores en la mesa.", "Hay lápices y marcadores sobre el estante.", "El contenedor tiene papeles y borrador."], correct: 0 },
+      { prompt: "The large table is clean and light-colored.", options: ["La mesa grande está limpia y clara.", "La mesa de madera está desordenada.", "La mesa clara está en el centro."], correct: 0 },
+      { prompt: "Normally, the children cut paper in class.", options: ["Normally los niños cortan papel en la clase.", "Los niños escriben con marcadores.", "Normally los niños estudian 9 horas."], correct: 0 },
+      { prompt: "Antonio studies for 9 hours, and he is happy at school.", options: ["Antonio estudia por 9 horas y él está feliz en la escuela.", "Antonio trabaja por 9 horas en la clase.", "Él estudia feliz con sus amigos."], correct: 0 }
+    ]
+  },
+  {
+    id: 8,
+    title: "8. Almuerzo Familiar al Aire Libre",
+    text: "Hoy es 26 de septiembre de 2026. Son las 14:12 de la tarde y hace 20 grados aproximadamente. En esta fotografía yo veo una comida al aire libre o un almuerzo familiar sobre una mesa grande de madera oscura. Hay un plato de papel con un diseño azul y blanco. En el centro del plato hay maíz de color amarillo. A la izquierda hay una porción de ensalada de pasta de varios colores. A la derecha hay un trozo de carne con salsa barbacoa y un tenedor metálico. Detrás del maíz hay un perrito caliente en un pan con salsa de tomate encima. Detrás del plato principal hay un rollo de papel de cocina blanco y una botella de salsa. A la izquierda hay un tazón de vidrio con más ensalada de pasta. A la derecha yo veo un recipiente con papel de aluminio y un pincel de cocina. Al fondo yo puedo ver otros platos y botes de salsa, por eso parece una comida compartida entre varias personas. Toda la comida está bien organizada sobre la mesa limpia.",
+    vocab: [
+      { es: "Almuerzo", en: "Lunch" },
+      { es: "Maíz", en: "Corn" },
+      { es: "Tenedor", en: "Fork" },
+      { es: "Perrito caliente", en: "Hot dog" },
+      { es: "Salsa de tomate", en: "Ketchup" },
+      { es: "Papel de cocina", en: "Paper towels" },
+      { es: "Tazón de vidrio", en: "Glass bowl" },
+      { es: "Papel de aluminio", en: "Aluminum foil" },
+      { es: "Pincel de cocina", en: "Kitchen brush" }
+    ],
+    trans: [
+      { prompt: "I see an outdoor meal or a family lunch on a large dark wooden table.", options: ["Yo veo una comida al aire libre o un almuerzo familiar sobre una mesa grande de madera oscura.", "Veo un almuerzo familiar sobre una mesa clara de mármol.", "Toda la familia come en una mesa grande al aire libre."], correct: 0 },
+      { prompt: "There is a paper plate with a blue and white design.", options: ["Hay un plato de papel con un diseño azul y blanco.", "Hay un plato de vidrio con salsa de tomate.", "Veo un plato azul con ensalada de pasta."], correct: 0 },
+      { prompt: "In the center of the plate, there is yellow corn.", options: ["En el centro del plato hay maíz de color amarillo.", "Detrás del plato hay maíz y carne.", "A la derecha del plato hay maíz amarillo."], correct: 0 },
+      { prompt: "On the left, there is a serving of colorful pasta salad.", options: ["A la izquierda hay una porción de ensalada de pasta de varios colores.", "A la izquierda hay un tazón con salsa.", "En el centro hay ensalada de pasta."], correct: 0 },
+      { prompt: "On the right, there is a piece of meat with barbecue sauce and a metal fork.", options: ["A la derecha hay un trozo de carne con salsa barbacoa y un tenedor metálico.", "A la derecha hay un perrito caliente con tenedor.", "Veo un trozo de carne con salsa de tomate."], correct: 0 },
+      { prompt: "Behind the corn, there is a hot dog in a bun with ketchup on top.", options: ["Detrás del maíz hay un perrito caliente en un pan con salsa de tomate encima.", "Al lado del maíz hay un perrito caliente con salsa barbacoa.", "Detrás del plato hay un pan con carne."], correct: 0 },
+      { prompt: "Behind the main plate, there is a roll of white paper towels and a bottle of sauce.", options: ["Detrás del plato principal hay un rollo de papel de cocina blanco y una botella de salsa.", "Al lado del plato hay un rollo de aluminio.", "Sobre la mesa hay botellas de salsa y vasos."], correct: 0 },
+      { prompt: "On the left, there is a glass bowl with more pasta salad.", options: ["A la izquierda hay un tazón de vidrio con más ensalada de pasta.", "A la izquierda hay un recipiente con papel de aluminio.", "En el centro hay un tazón de vidrio con salsa."], correct: 0 },
+      { prompt: "On the right, I see a container covered with aluminum foil and a kitchen brush.", options: ["A la derecha yo veo un recipiente con papel de aluminio y un pincel de cocina.", "A la derecha hay botes de salsa y un pincel.", "Veo un recipiente con ensalada y tenedor."], correct: 0 },
+      { prompt: "All the food is well organized on the clean table.", options: ["Toda la comida está bien organizada sobre la mesa limpia.", "La comida compartida está desordenada sobre la mesa.", "Toda la familia come organizada en la mesa."], correct: 0 }
+    ]
+  },
+  {
+    id: 9,
+    title: "9. El Baño Amplio",
+    text: "Hoy es lunes 5 de octubre de 2026. Son las 3:40 de la tarde. Hace 68°F. Yo observo un baño grande y muy limpio. A la izquierda hay una ducha de vidrio. Las paredes de la ducha son de azulejos claros. El piso de la ducha es pequeño. Al lado de la ducha hay una tina de baño. La tina está debajo de una ventana grande. La ventana está cerrada. Detrás de la tina hay una pared gris. En la pared hay una barra para toallas. A la derecha está el mueble del lavabo. La superficie es de granito bonito. La superficie es más oscura que la pared. El lavabo es blanco y redondo. Al fondo hay una puerta abierta. La puerta es alta y blanca. Dentro del armario hay mucha ropa colgada. El baño está muy bien iluminado. Yo veo dos luces en el techo. La habitación es muy amplia. En la otra habitación está el inodoro. En el baño yo tengo papel higiénico, cepillo de dientes, pasta de dientes y toallas. Hay un basurero en el baño.",
+    vocab: [
+      { es: "Ducha de vidrio", en: "Glass shower" },
+      { es: "Azulejos", en: "Tiles" },
+      { es: "Tina de baño", en: "Bathtub" },
+      { es: "Barra para toallas", en: "Towel bar" },
+      { es: "Granito", en: "Granite" },
+      { es: "Inodoro", en: "Toilet" },
+      { es: "Cepillo de dientes", en: "Toothbrush" },
+      { es: "Pasta de dientes", en: "Toothpaste" },
+      { es: "Basurero", en: "Trash can" }
+    ],
+    trans: [
+      { prompt: "I observe a large and very clean bathroom.", options: ["Yo observo un baño grande y muy limpio.", "El baño es pequeño pero muy limpio.", "Yo veo un baño amplio con ducha."], correct: 0 },
+      { prompt: "On the left, there is a glass shower.", options: ["A la izquierda hay una ducha de vidrio.", "A la derecha hay una tina de baño.", "A la izquierda hay una ventana grande."], correct: 0 },
+      { prompt: "The shower walls are made of light-colored tiles.", options: ["Las paredes de la ducha son de azulejos claros.", "Las paredes del baño son de color gris.", "El piso de la ducha es de granito."], correct: 0 },
+      { prompt: "Next to the shower, there is a bathtub.", options: ["Al lado de la ducha hay una tina de baño.", "Debajo de la ventana hay una ducha de vidrio.", "Al lado de la tina hay un lavabo."], correct: 0 },
+      { prompt: "On the wall, there is a towel bar.", options: ["En la pared hay una barra para toallas.", "Detrás de la puerta hay toallas colgadas.", "En la pared hay dos luces brillantes."], correct: 0 },
+      { prompt: "The countertop is made of beautiful granite.", options: ["La superficie es de granito bonito.", "El mueble del lavabo es de madera oscura.", "La superficie del lavabo es blanca."], correct: 0 },
+      { prompt: "At the back, there is an open door.", options: ["Al fondo hay una puerta abierta.", "La puerta del armario está cerrada.", "Al fondo hay una ventana alta."], correct: 0 },
+      { prompt: "The bathroom is very well lit.", options: ["El baño está muy bien iluminado.", "Yo veo dos lámparas en el techo.", "La habitación es grande y clara."], correct: 0 },
+      { prompt: "In the other room is the toilet.", options: ["En la otra habitación está el inodoro.", "En el baño hay un inodoro blanco.", "Al lado del lavabo está el inodoro."], correct: 0 },
+      { prompt: "In the bathroom, I have toilet paper, a toothbrush, toothpaste, and towels.", options: ["En el baño yo tengo papel higiénico, cepillo de dientes, pasta de dientes y toallas.", "Tengo jabón, toallas y cepillo de dientes.", "En el lavabo hay pasta de dientes y papel."], correct: 0 }
+    ]
+  },
+  {
+    id: 10,
+    title: "10. Dormitorio Infantil de Spider-Man",
+    text: "Hoy es lunes 22 de mayo de 2026. Son las 07:08 de la mañana. Hace 70°F. Esta es una fotografía de un dormitorio infantil. El dormitorio está muy ordenado. Yo veo una cobija en el centro. La cama es de madera oscura. Tiene cobija de Spider-Man. La cobija es muy colorida. A la izquierda de la cama hay una ventana. La ventana tiene una persiana de color gris oscuro. La persiana está a media altura. Yo observo árboles verdes a través del cristal. Al lado de la ventana hay un organizador de juguetes. El organizador es alto y estrecho. Está lleno de animales de peluche. Veo peluches de varios colores. En la pared, cerca de la ventana, hay un cuadro. Es un dibujo vertical de Spider-Man. Spider-Man es de color rojo y azul. Detrás de la cama hay unas cortinas. Las cortinas son de color azul brillante. Tienen muchos logos de Spider-Man. En el techo hay una lámpara encendida. La luz de la lámpara es cálida. El suelo tiene una alfombra gris. Todo en el cuarto es de Spider-Man. Es un dormitorio de un gran fan.",
+    vocab: [
+      { es: "Dormitorio", en: "Bedroom" },
+      { es: "Cobija", en: "Blanket" },
+      { es: "Persiana", en: "Blind" },
+      { es: "Organizador", en: "Organizer" },
+      { es: "Estrecho", en: "Narrow" },
+      { es: "Peluche", en: "Stuffed animal" },
+      { es: "Cortinas", en: "Curtains" },
+      { es: "Lámpara encendida", en: "Lamp turned on" },
+      { es: "Alfombra", en: "Carpet / Rug" }
+    ],
+    trans: [
+      { prompt: "This is a photograph of a child's bedroom.", options: ["Esta es una fotografía de un dormitorio infantil.", "Esta es una foto de una sala organizada.", "En la foto veo un dormitorio de un gran fan."], correct: 0 },
+      { prompt: "The bedroom is very tidy.", options: ["El dormitorio está muy ordenado.", "El cuarto de Spider-Man está desordenado.", "El dormitorio es alto y amplio."], correct: 0 },
+      { prompt: "The bed is made of dark wood.", options: ["La cama es de madera oscura.", "La mesa es de madera clara.", "La cama tiene un cuadro de Spider-Man."], correct: 0 },
+      { prompt: "To the left of the bed, there is a window.", options: ["A la izquierda de la cama hay una ventana.", "Detrás de la cama hay unos árboles verdes.", "A la derecha de la ventana hay una lámpara."], correct: 0 },
+      { prompt: "The window has a dark gray blind.", options: ["La ventana tiene una persiana de color gris oscuro.", "La ventana tiene cortinas de color azul brillante.", "La persiana gris está abierta."], correct: 0 },
+      { prompt: "Next to the window, there is a toy organizer.", options: ["Al lado de la ventana hay un organizador de juguetes.", "Cerca de la cama hay un organizador alto.", "En la pared hay un estante de juguetes."], correct: 0 },
+      { prompt: "It is full of stuffed animals.", options: ["Está lleno de animales de peluche.", "El organizador está lleno de juguetes de plástico.", "Veo muchos peluches sobre la cama."], correct: 0 },
+      { prompt: "Behind the bed, there are curtains.", options: ["Detrás de la cama hay unas cortinas.", "En la ventana hay cortinas rojas.", "Detrás de la cama hay un cuadro vertical."], correct: 0 },
+      { prompt: "On the ceiling, there is a lamp that is turned on.", options: ["En el techo hay una lámpara encendida.", "En el techo hay dos luces brillantes.", "La lámpara del techo es de Spider-Man."], correct: 0 },
+      { prompt: "The floor has a gray carpet.", options: ["El suelo tiene una alfombra gris.", "El piso es de madera oscura.", "En el suelo hay peluches de varios colores."], correct: 0 }
+    ]
+  }
+];
+
+// ESTADO GLOBAL
+let currentLecture = null;
+let ecuadorVoice = null;
+let matchSelectedWord = null;
+let matchSelectedDef = null;
+let matchedCount = 0;
+let currentSpellingIndex = 0;
+let currentTransIndex = 0;
+
+// INICIALIZAR VOZ ECUADOR / FEMENINA
+function initVoices() {
+  const voices = window.speechSynthesis.getVoices();
+  ecuadorVoice = voices.find(v => v.lang === 'es-EC') || 
+                 voices.find(v => v.lang.startsWith('es') && v.name.toLowerCase().includes('female')) || 
+                 voices.find(v => v.lang.startsWith('es'));
+}
+window.speechSynthesis.onvoiceschanged = initVoices;
+
+// MENÚ
+function showMenu() {
+  stopTTS();
+  document.getElementById('view-menu').classList.remove('hidden');
+  document.getElementById('view-reading').classList.add('hidden');
+  document.getElementById('view-match').classList.add('hidden');
+  document.getElementById('view-spelling').classList.add('hidden');
+  document.getElementById('view-translation').classList.add('hidden');
+  renderMenu();
+}
+
+function renderMenu() {
+  const grid = document.getElementById('menu-grid');
+  grid.innerHTML = '';
+  lecturas.forEach(l => {
+    const card = document.createElement('div');
+    card.className = 'menu-card';
+    card.innerText = l.title;
+    card.onclick = () => loadLecture(l.id);
+    grid.appendChild(card);
+  });
+}
+
+function loadLecture(id) {
+  currentLecture = lecturas.find(l => l.id === id);
+  document.getElementById('read-title').innerText = currentLecture.title;
+  document.getElementById('read-text').innerText = currentLecture.text;
+  
+  document.getElementById('view-menu').classList.add('hidden');
+  document.getElementById('view-reading').classList.remove('hidden');
+}
+
+// TTS CONTROL
+function playTTS(textToRead = null, customRate = null) {
+  window.speechSynthesis.cancel();
+  const text = textToRead || currentLecture.text;
+  const utterance = new SpeechSynthesisUtterance(text);
+  if (ecuadorVoice) utterance.voice = ecuadorVoice;
+  utterance.lang = 'es-EC';
+  utterance.rate = customRate || parseFloat(document.getElementById('rate').value);
+  window.speechSynthesis.speak(utterance);
+}
+
+function pauseTTS() { window.speechSynthesis.pause(); }
+function stopTTS() { window.speechSynthesis.cancel(); }
+
+// FASE 1: MATCH
+function startMatchGame() {
+  stopTTS();
+  document.getElementById('view-reading').classList.add('hidden');
+  document.getElementById('view-match').classList.remove('hidden');
+  document.getElementById('btn-next-spelling').classList.add('hidden');
+  
+  matchedCount = 0;
+  matchSelectedWord = null;
+  matchSelectedDef = null;
+
+  const colWords = document.getElementById('col-words');
+  const colDefs = document.getElementById('col-defs');
+  colWords.innerHTML = '';
+  colDefs.innerHTML = '';
+
+  const words = [...currentLecture.vocab].sort(() => Math.random() - 0.5);
+  const defs = [...currentLecture.vocab].sort(() => Math.random() - 0.5);
+
+  words.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'match-item';
+    div.innerText = item.es;
+    div.dataset.value = item.es;
+    div.onclick = () => selectMatchItem(div, 'word');
+    colWords.appendChild(div);
+  });
+
+  defs.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'match-item';
+    div.innerText = item.en;
+    div.dataset.value = item.es;
+    div.onclick = () => selectMatchItem(div, 'def');
+    colDefs.appendChild(div);
+  });
+}
+
+function selectMatchItem(el, type) {
+  if (el.classList.contains('matched')) return;
+
+  if (type === 'word') {
+    document.querySelectorAll('#col-words .match-item').forEach(i => i.classList.remove('selected'));
+    matchSelectedWord = el;
+  } else {
+    document.querySelectorAll('#col-defs .match-item').forEach(i => i.classList.remove('selected'));
+    matchSelectedDef = el;
+  }
+  el.classList.add('selected');
+
+  if (matchSelectedWord && matchSelectedDef) {
+    if (matchSelectedWord.dataset.value === matchSelectedDef.dataset.value) {
+      playSound('success');
+      matchSelectedWord.classList.add('matched');
+      matchSelectedDef.classList.add('matched');
+      matchedCount++;
+      if (matchedCount === currentLecture.vocab.length) {
+        document.getElementById('btn-next-spelling').classList.remove('hidden');
+      }
+    } else {
+      playSound('error');
+    }
+    matchSelectedWord.classList.remove('selected');
+    matchSelectedDef.classList.remove('selected');
+    matchSelectedWord = null;
+    matchSelectedDef = null;
+  }
+}
+
+// FASE 2: DELETREO
+function startSpellingGame() {
+  currentSpellingIndex = 0;
+  document.getElementById('view-match').classList.add('hidden');
+  document.getElementById('view-spelling').classList.remove('hidden');
+  document.getElementById('btn-next-trans').classList.add('hidden');
+  loadSpellingWord();
+}
+
+function loadSpellingWord() {
+  const inputEl = document.getElementById('spelling-input');
+  inputEl.value = '';
+  inputEl.disabled = false;
+  inputEl.focus();
+  document.getElementById('spelling-feedback').innerText = '';
+  document.getElementById('spelling-progress').innerText = `Palabra ${currentSpellingIndex + 1} de ${currentLecture.vocab.length}`;
+  playSpellingAudio();
+}
+
+function playSpellingAudio() {
+  const word = currentLecture.vocab[currentSpellingIndex].es;
+  const spellingRate = parseFloat(document.getElementById('spelling-rate').value);
+  playTTS(word, spellingRate);
+}
+
+function checkSpelling() {
+  const inputRaw = document.getElementById('spelling-input').value.trim();
+  if (!inputRaw) return;
+
+  const inputClean = removeAccents(inputRaw);
+  const targetClean = removeAccents(currentLecture.vocab[currentSpellingIndex].es);
+  const feedback = document.getElementById('spelling-feedback');
+
+  if (inputClean === targetClean) {
+    playSound('success');
+    feedback.style.color = "var(--success)";
+    feedback.innerText = "¡Correcto!";
+    document.getElementById('spelling-input').disabled = true;
+
+    setTimeout(() => {
+      currentSpellingIndex++;
+      if (currentSpellingIndex < currentLecture.vocab.length) {
+        loadSpellingWord();
+      } else {
+        feedback.innerText = "¡Has completado todo el deletreo!";
+        document.getElementById('btn-next-trans').classList.remove('hidden');
+      }
+    }, 1000);
+  } else {
+    playSound('error');
+    feedback.style.color = "var(--danger)";
+    feedback.innerText = "Incorrecto. Intenta de nuevo.";
+  }
+}
+
+// FASE 3: TRADUCCIÓN
+function startTransGame() {
+  currentTransIndex = 0;
+  document.getElementById('view-spelling').classList.add('hidden');
+  document.getElementById('view-translation').classList.remove('hidden');
+  document.getElementById('btn-finish').classList.add('hidden');
+  loadTransQuestion();
+}
+
+function loadTransQuestion() {
+  document.getElementById('trans-feedback').innerText = '';
+  
+  const qList = currentLecture.trans;
+  document.getElementById('trans-progress').innerText = `Pregunta ${currentTransIndex + 1} de ${qList.length}`;
+  
+  const currentQ = qList[currentTransIndex];
+  document.getElementById('trans-prompt').innerText = `"${currentQ.prompt}"`;
+
+  const container = document.getElementById('trans-options');
+  container.innerHTML = '';
+
+  currentQ.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'trans-option';
+    btn.innerText = opt;
+    btn.onclick = () => {
+      if (idx === currentQ.correct) {
+        playSound('success');
+        btn.classList.add('correct-choice');
+        document.getElementById('trans-feedback').style.color = "var(--success)";
+        document.getElementById('trans-feedback').innerText = "¡Correcto!";
+        
+        // Bloquear selecciones múltiples
+        document.querySelectorAll('.trans-option').forEach(b => b.onclick = null);
+
+        setTimeout(() => {
+          currentTransIndex++;
+          if (currentTransIndex < qList.length) {
+            loadTransQuestion();
+          } else {
+            document.getElementById('trans-feedback').innerText = "¡Felicidades! Has completado todas las traducciones.";
+            document.getElementById('btn-finish').classList.remove('hidden');
+          }
+        }, 1000);
+      } else {
+        playSound('error');
+        document.getElementById('trans-feedback').style.color = "var(--danger)";
+        document.getElementById('trans-feedback').innerText = "Opción incorrecta. Intenta de nuevo.";
+      }
+    };
+    container.appendChild(btn);
+  });
+}
+
+// Inicializar App
+initVoices();
+showMenu();
+</script>
+</body>
+</html>
